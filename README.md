@@ -79,7 +79,7 @@ Additionally, they are much closer to a circle than a rectangle, this helps make
 
 A pregenerated world can be seed below:
 
-<img src="https://raw.githubusercontent.com/codedcosmos/honeycomb/main/res/hexagon_screenshot.png" height="400" width="400">
+<img src="https://raw.githubusercontent.com/codedcosmos/honeycomb/main/res/hexagon_screenshot.png" height="600" width="400">
 
 ### Building
 When building on Ubuntu/Debian make sure to install mingw: `apt install mingw-w64`
