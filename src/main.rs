@@ -1,6 +1,6 @@
-use enigo::{Enigo, KeyboardControllable, Key};
 use std::{thread, time};
-use clap::{Arg, App, SubCommand};
+use enigo::{Enigo, KeyboardControllable, Key};
+use clap::{Arg, App};
 
 fn main() {
     // Process launch arguments with clap
@@ -15,7 +15,7 @@ fn main() {
             .long("input_delay")
             .help("Sets the delay between keypresses (milliseconds)")
             .takes_value(true)
-            .default_value("40"))
+            .default_value("120"))
 
         .arg(Arg::with_name("Delay Between Teleports")
             .value_name("Delay Between Teleports")
@@ -99,6 +99,7 @@ fn main() {
     // Load data from arguments
     let input_delay = matches.value_of("Input Delay").unwrap_or_default();
     let input_delay = input_delay.parse::<u64>().expect("input_delay must be a positive integer!");
+    #[cfg(target_os = "linux")]
     let input_delay_micro = input_delay * 1000;
 
     let teleport_delay = matches.value_of("Delay Between Teleports").unwrap_or_default();
@@ -141,6 +142,15 @@ fn main() {
     let pregenerate_distance = pregenerate_distance.parse::<u64>().expect("pregenerate_distance must be a positive integer!");
     let pregenerate_distance = pregenerate_distance as i64;
 
+    // Initial display
+    if pregenerate_distance == 0 {
+        println!("Will pre generate a hexagon until closed");
+        println!("Press Ctrl+C to close");
+    } else {
+        println!("Will pre generate a hexagon of radius {} blocks", pregenerate_distance);
+        println!("Press Ctrl+C to close prematurely");
+    }
+
     // Wait Block
     println!("Starting up honeycomb");
     for i in 0..start_delay {
@@ -150,6 +160,7 @@ fn main() {
 
     // Setup enigo
     let mut enigo = Enigo::new();
+    #[cfg(target_os = "linux")]
     enigo.set_delay(input_delay_micro);
 
     // Set player gamemode
@@ -161,13 +172,11 @@ fn main() {
         execute_command(&mut enigo, input_delay, "/gamemode creative @s".to_string());
     }
 
-    // Configurable
+    // Pre-calculate some stuff
     let chunk_size = 16.0;
     let look_dist = view_distance as f64 * 2.0;
     let hexagon_size = chunk_size * look_dist * view_buffer;
 
-    let mut x = start_x as f64;
-    let mut y = start_y as f64;
     let mut step_amount = 0;
 
     let long = 60.0_f64.to_radians().sin() * hexagon_size;
@@ -184,11 +193,11 @@ fn main() {
     let mut current_distance = 0.0;
 
     while pregenerate_distance == 0 || current_distance < pregenerate_distance as f64 {
-        x = start_x as f64;
-        y = start_y as f64;
+        let mut x = start_x as f64;
+        let mut y = start_y as f64;
 
         // Move to Bottom
-        for s in 0..step_amount {
+        for _s in 0..step_amount {
             x += down.0;
             y += down.1;
         }
@@ -222,7 +231,7 @@ fn main() {
     println!("Completed");
 }
 
-fn perform_dir(mut enigo: &mut Enigo, input_delay: u64, teleport_delay: u64, x: &mut f64, y: &mut f64, step_amount: i64, dir: (f64, f64), current_distance: f64, pregenerate_distance: i64, step_index: i64) {
+fn perform_dir(enigo: &mut Enigo, input_delay: u64, teleport_delay: u64, x: &mut f64, y: &mut f64, step_amount: i64, dir: (f64, f64), current_distance: f64, pregenerate_distance: i64, step_index: i64) {
     let current_distance = current_distance as i64;
     let pregenerate_distance = pregenerate_distance as i64;
 
@@ -243,7 +252,7 @@ fn perform_dir(mut enigo: &mut Enigo, input_delay: u64, teleport_delay: u64, x: 
     }
 }
 
-fn teleport(mut enigo: &mut Enigo, input_delay: u64, teleport_delay: u64, x: i64, y: i64) {
+fn teleport(enigo: &mut Enigo, input_delay: u64, teleport_delay: u64, x: i64, y: i64) {
     teleport_with_rot(enigo, input_delay, teleport_delay, x, y, 0.0);
     teleport_with_rot(enigo, input_delay, teleport_delay, x, y, 90.0);
     teleport_with_rot(enigo, input_delay, teleport_delay, x, y, 180.0);
@@ -261,7 +270,7 @@ fn teleport_with_rot(enigo: &mut Enigo, input_delay: u64, teleport_delay: u64, x
 fn execute_command(enigo: &mut Enigo, input_delay: u64, command_text: String) {
     thread::sleep(time::Duration::from_millis(input_delay));
 
-    enigo.key_click(Key::Return);
+    enigo.key_sequence("t");
 
     thread::sleep(time::Duration::from_millis(input_delay * 2));
 
